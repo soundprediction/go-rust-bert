@@ -142,26 +142,26 @@ typedef TranslationModelWrapper* (*new_translation_model_t)();
 typedef char* (*translate_t)(TranslationModelWrapper*, const char*, const char*, const char*);
 typedef void (*free_translation_model_t)(TranslationModelWrapper*);
 
-typedef SentimentModelWrapper* (*new_sentiment_model_from_files_t)(const char*, const char*, const char*, const char*);
+typedef SentimentModelWrapper* (*new_sentiment_model_from_files_t)(const char*, const char*, const char*, const char*, int);
 
 typedef TextGenerationModelWrapper* (*new_text_generation_model_t)();
 typedef char* (*generate_text_t)(TextGenerationModelWrapper*, const char*, const char*);
 typedef void (*free_text_generation_model_t)(TextGenerationModelWrapper*);
 
-typedef NERModelWrapper* (*new_ner_model_from_files_t)(const char*, const char*, const char*, const char*);
-typedef QAModelWrapper* (*new_qa_model_from_files_t)(const char*, const char*, const char*, const char*);
-typedef SummarizationModelWrapper* (*new_summarization_model_from_files_t)(const char*, const char*, const char*, const char*);
-typedef ZeroShotClassificationModelWrapper* (*new_zero_shot_model_from_files_t)(const char*, const char*, const char*, const char*);
-typedef TranslationModelWrapper* (*new_translation_model_from_files_t)(const char*, const char*, const char*, const char*);
-typedef TextGenerationModelWrapper* (*new_text_generation_model_from_files_t)(const char*, const char*, const char*, const char*);
+typedef NERModelWrapper* (*new_ner_model_from_files_t)(const char*, const char*, const char*, const char*, int);
+typedef QAModelWrapper* (*new_qa_model_from_files_t)(const char*, const char*, const char*, const char*, int);
+typedef SummarizationModelWrapper* (*new_summarization_model_from_files_t)(const char*, const char*, const char*, const char*, int);
+typedef ZeroShotClassificationModelWrapper* (*new_zero_shot_model_from_files_t)(const char*, const char*, const char*, const char*, int);
+typedef TranslationModelWrapper* (*new_translation_model_from_files_t)(const char*, const char*, const char*, const char*, int);
+typedef TextGenerationModelWrapper* (*new_text_generation_model_from_files_t)(const char*, const char*, const char*, const char*, int);
 
 // Helpers to call function pointers from C
 SentimentModelWrapper* call_new_sentiment_model(void* f) {
     return ((new_sentiment_model_t)f)();
 }
 
-SentimentModelWrapper* call_new_sentiment_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me) {
-    return ((new_sentiment_model_from_files_t)f)(m, c, v, me);
+SentimentModelWrapper* call_new_sentiment_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me, int t) {
+    return ((new_sentiment_model_from_files_t)f)(m, c, v, me, t);
 }
 
 SentimentResult* call_predict_sentiment(void* f, SentimentModelWrapper* w, const char* text) {
@@ -298,28 +298,28 @@ void call_free_text_generation_model(void* f, TextGenerationModelWrapper* w) {
 }
 
 // Helpers for custom loaders
-void* call_new_ner_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me) {
-    return ((new_ner_model_from_files_t)f)(m, c, v, me);
+void* call_new_ner_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me, int t) {
+    return ((new_ner_model_from_files_t)f)(m, c, v, me, t);
 }
 
-void* call_new_qa_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me) {
-    return ((new_qa_model_from_files_t)f)(m, c, v, me);
+void* call_new_qa_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me, int t) {
+    return ((new_qa_model_from_files_t)f)(m, c, v, me, t);
 }
 
-void* call_new_summarization_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me) {
-    return ((new_summarization_model_from_files_t)f)(m, c, v, me);
+void* call_new_summarization_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me, int t) {
+    return ((new_summarization_model_from_files_t)f)(m, c, v, me, t);
 }
 
-void* call_new_zero_shot_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me) {
-    return ((new_zero_shot_model_from_files_t)f)(m, c, v, me);
+void* call_new_zero_shot_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me, int t) {
+    return ((new_zero_shot_model_from_files_t)f)(m, c, v, me, t);
 }
 
-void* call_new_translation_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me) {
-    return ((new_translation_model_from_files_t)f)(m, c, v, me);
+void* call_new_translation_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me, int t) {
+    return ((new_translation_model_from_files_t)f)(m, c, v, me, t);
 }
 
-void* call_new_text_generation_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me) {
-    return ((new_text_generation_model_from_files_t)f)(m, c, v, me);
+void* call_new_text_generation_model_from_files(void* f, const char* m, const char* c, const char* v, const char* me, int t) {
+    return ((new_text_generation_model_from_files_t)f)(m, c, v, me, t);
 }
 */
 import "C"
@@ -328,6 +328,21 @@ import (
 	"errors"
 	"runtime"
 	"unsafe"
+)
+
+// ModelType constants matching Rust implementation
+const (
+	ModelTypeBert       = 0
+	ModelTypeDistilBert = 1
+	ModelTypeRoberta    = 2
+	ModelTypeXLMRoberta = 3
+	ModelTypeElectra    = 4
+	ModelTypeAlbert     = 5
+	ModelTypeXLNet      = 6
+	ModelTypeBart       = 7
+	ModelTypeMarian     = 8
+	ModelTypeT5         = 9
+	ModelTypeGPT2       = 10
 )
 
 var (
@@ -378,7 +393,7 @@ var (
 )
 
 // Helper for calling *from_files functions which all have same signature
-func callNewModelFromFiles(fn unsafe.Pointer, helper func(unsafe.Pointer, *C.char, *C.char, *C.char, *C.char) unsafe.Pointer, modelPath, configPath, vocabPath, mergesPath string) (unsafe.Pointer, error) {
+func callNewModelFromFiles(fn unsafe.Pointer, helper func(unsafe.Pointer, *C.char, *C.char, *C.char, *C.char, C.int) unsafe.Pointer, modelPath, configPath, vocabPath, mergesPath string, modelType int) (unsafe.Pointer, error) {
 	if !initialized {
 		return nil, errors.New("library not initialized")
 	}
@@ -396,7 +411,7 @@ func callNewModelFromFiles(fn unsafe.Pointer, helper func(unsafe.Pointer, *C.cha
 		defer C.free(unsafe.Pointer(cMerges))
 	}
 
-	ptr := helper(fn, cModel, cConfig, cVocab, cMerges)
+	ptr := helper(fn, cModel, cConfig, cVocab, cMerges, C.int(modelType))
 	if ptr == nil {
 		return nil, errors.New("failed to create custom model")
 	}
@@ -429,70 +444,70 @@ func NewSentimentModel() (*SentimentModel, error) {
 
 // NewSentimentModelFromFiles creates a new SentimentModel using local files.
 // mergesPath is optional (pass "" if not used).
-func NewSentimentModelFromFiles(modelPath, configPath, vocabPath, mergesPath string) (*SentimentModel, error) {
-	ptr, err := callNewModelFromFiles(fnNewSentimentModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char) unsafe.Pointer {
-		return unsafe.Pointer(C.call_new_sentiment_model_from_files(fn, m, c, v, me))
-	}, modelPath, configPath, vocabPath, mergesPath)
+func NewSentimentModelFromFiles(modelPath, configPath, vocabPath, mergesPath string, modelType int) (*SentimentModel, error) {
+	ptr, err := callNewModelFromFiles(fnNewSentimentModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char, t C.int) unsafe.Pointer {
+		return unsafe.Pointer(C.call_new_sentiment_model_from_files(fn, m, c, v, me, t))
+	}, modelPath, configPath, vocabPath, mergesPath, modelType)
 	if err != nil {
 		return nil, err
 	}
 	return &SentimentModel{ptr: (*C.SentimentModelWrapper)(ptr)}, nil
 }
 
-func NewNERModelFromFiles(modelPath, configPath, vocabPath, mergesPath string) (*NERModel, error) {
-	ptr, err := callNewModelFromFiles(fnNewNERModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char) unsafe.Pointer {
-		return unsafe.Pointer(C.call_new_ner_model_from_files(fn, m, c, v, me))
-	}, modelPath, configPath, vocabPath, mergesPath)
+func NewNERModelFromFiles(modelPath, configPath, vocabPath, mergesPath string, modelType int) (*NERModel, error) {
+	ptr, err := callNewModelFromFiles(fnNewNERModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char, t C.int) unsafe.Pointer {
+		return unsafe.Pointer(C.call_new_ner_model_from_files(fn, m, c, v, me, t))
+	}, modelPath, configPath, vocabPath, mergesPath, modelType)
 	if err != nil {
 		return nil, err
 	}
 	return &NERModel{ptr: (*C.NERModelWrapper)(ptr)}, nil
 }
 
-func NewQAModelFromFiles(modelPath, configPath, vocabPath, mergesPath string) (*QAModel, error) {
-	ptr, err := callNewModelFromFiles(fnNewQAModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char) unsafe.Pointer {
-		return unsafe.Pointer(C.call_new_qa_model_from_files(fn, m, c, v, me))
-	}, modelPath, configPath, vocabPath, mergesPath)
+func NewQAModelFromFiles(modelPath, configPath, vocabPath, mergesPath string, modelType int) (*QAModel, error) {
+	ptr, err := callNewModelFromFiles(fnNewQAModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char, t C.int) unsafe.Pointer {
+		return unsafe.Pointer(C.call_new_qa_model_from_files(fn, m, c, v, me, t))
+	}, modelPath, configPath, vocabPath, mergesPath, modelType)
 	if err != nil {
 		return nil, err
 	}
 	return &QAModel{ptr: (*C.QAModelWrapper)(ptr)}, nil
 }
 
-func NewSummarizationModelFromFiles(modelPath, configPath, vocabPath, mergesPath string) (*SummarizationModel, error) {
-	ptr, err := callNewModelFromFiles(fnNewSummarizationModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char) unsafe.Pointer {
-		return unsafe.Pointer(C.call_new_summarization_model_from_files(fn, m, c, v, me))
-	}, modelPath, configPath, vocabPath, mergesPath)
+func NewSummarizationModelFromFiles(modelPath, configPath, vocabPath, mergesPath string, modelType int) (*SummarizationModel, error) {
+	ptr, err := callNewModelFromFiles(fnNewSummarizationModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char, t C.int) unsafe.Pointer {
+		return unsafe.Pointer(C.call_new_summarization_model_from_files(fn, m, c, v, me, t))
+	}, modelPath, configPath, vocabPath, mergesPath, modelType)
 	if err != nil {
 		return nil, err
 	}
 	return &SummarizationModel{ptr: (*C.SummarizationModelWrapper)(ptr)}, nil
 }
 
-func NewZeroShotModelFromFiles(modelPath, configPath, vocabPath, mergesPath string) (*ZeroShotModel, error) {
-	ptr, err := callNewModelFromFiles(fnNewZeroShotModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char) unsafe.Pointer {
-		return unsafe.Pointer(C.call_new_zero_shot_model_from_files(fn, m, c, v, me))
-	}, modelPath, configPath, vocabPath, mergesPath)
+func NewZeroShotModelFromFiles(modelPath, configPath, vocabPath, mergesPath string, modelType int) (*ZeroShotModel, error) {
+	ptr, err := callNewModelFromFiles(fnNewZeroShotModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char, t C.int) unsafe.Pointer {
+		return unsafe.Pointer(C.call_new_zero_shot_model_from_files(fn, m, c, v, me, t))
+	}, modelPath, configPath, vocabPath, mergesPath, modelType)
 	if err != nil {
 		return nil, err
 	}
 	return &ZeroShotModel{ptr: (*C.ZeroShotClassificationModelWrapper)(ptr)}, nil
 }
 
-func NewTranslationModelFromFiles(modelPath, configPath, vocabPath, mergesPath string) (*TranslationModel, error) {
-	ptr, err := callNewModelFromFiles(fnNewTranslationModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char) unsafe.Pointer {
-		return unsafe.Pointer(C.call_new_translation_model_from_files(fn, m, c, v, me))
-	}, modelPath, configPath, vocabPath, mergesPath)
+func NewTranslationModelFromFiles(modelPath, configPath, vocabPath, mergesPath string, modelType int) (*TranslationModel, error) {
+	ptr, err := callNewModelFromFiles(fnNewTranslationModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char, t C.int) unsafe.Pointer {
+		return unsafe.Pointer(C.call_new_translation_model_from_files(fn, m, c, v, me, t))
+	}, modelPath, configPath, vocabPath, mergesPath, modelType)
 	if err != nil {
 		return nil, err
 	}
 	return &TranslationModel{ptr: (*C.TranslationModelWrapper)(ptr)}, nil
 }
 
-func NewTextGenerationModelFromFiles(modelPath, configPath, vocabPath, mergesPath string) (*TextGenerationModel, error) {
-	ptr, err := callNewModelFromFiles(fnNewTextGenerationModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char) unsafe.Pointer {
-		return unsafe.Pointer(C.call_new_text_generation_model_from_files(fn, m, c, v, me))
-	}, modelPath, configPath, vocabPath, mergesPath)
+func NewTextGenerationModelFromFiles(modelPath, configPath, vocabPath, mergesPath string, modelType int) (*TextGenerationModel, error) {
+	ptr, err := callNewModelFromFiles(fnNewTextGenerationModelFromFiles, func(fn unsafe.Pointer, m, c, v, me *C.char, t C.int) unsafe.Pointer {
+		return unsafe.Pointer(C.call_new_text_generation_model_from_files(fn, m, c, v, me, t))
+	}, modelPath, configPath, vocabPath, mergesPath, modelType)
 	if err != nil {
 		return nil, err
 	}

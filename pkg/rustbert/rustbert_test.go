@@ -341,7 +341,8 @@ func TestSentimentAnalysisFromFiles(t *testing.T) {
 	t.Logf("Config: %s", configPath)
 	t.Logf("Vocab: %s", vocabPath)
 
-	model, err := NewSentimentModelFromFiles(modelPath, configPath, vocabPath, mergesPath)
+	// DistilBERT SST-2 is a basic DistilBERT model
+	model, err := NewSentimentModelFromFiles(modelPath, configPath, vocabPath, mergesPath, ModelTypeDistilBert)
 	if err != nil {
 		t.Fatalf("Failed to create custom model: %v", err)
 	}

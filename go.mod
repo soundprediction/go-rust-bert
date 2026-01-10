@@ -1,4 +1,4 @@
-module github.com/go-rust-bert/go-rust-bert
+module github.com/soundprediction/go-rust-bert
 
 go 1.25.5
 
