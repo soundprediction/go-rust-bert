@@ -1,0 +1,85 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-rust:
+    name: Build Rust Library (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target_dir: darwin
+          - os: ubuntu-latest
+            target_dir: linux-amd64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Build Rust (macOS Universal)
+        if: matrix.os == 'macos-latest'
+        run: bash scripts/compile_rust_mac.sh
+
+      - name: Build Rust (Linux)
+        if: matrix.os != 'macos-latest'
+        run: bash scripts/compile_rust_linux.sh
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lib-${{ matrix.target_dir }}
+          path: pkg/rustbert/lib/${{ matrix.target_dir }}/
+
+  test-go:
+    name: Test Go (${{ matrix.os }})
+    needs: build-rust
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target_dir: darwin
+          - os: ubuntu-latest
+            target_dir: linux-amd64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Download Rust Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lib-${{ matrix.target_dir }}
+          path: pkg/rustbert/lib/${{ matrix.target_dir }}
+
+      - name: Run Go Tests
+        run: |
+          # Note: tests might fail if they require runtime linking and we unzip but env setup is needed.
+          # The Go wrappers usually handle unzipping to tmp or similar.
+          # For test-go, we assume the code can find the libs in pkg/rustbert/lib/...
+          # We need to unzip them for tests to run?
+          # The current go-rust-bert implementation uses `pkg/rustbert/lib` contents?
+          # Actually the go code unzips internal assets? No, it uses `lib/` directly if present?
+          # Let's check how the tests load the library.
+          # Assuming they load from the location we uploaded to.
+          
+          # Unzip artifacts for testing
+          gzip -d pkg/rustbert/lib/${{ matrix.target_dir }}/*.gz
+          
+          export CGO_LDFLAGS="-L$(pwd)/pkg/rustbert/lib/${{ matrix.target_dir }} -Wl,-rpath,$(pwd)/pkg/rustbert/lib/${{ matrix.target_dir }}"
+          go test -v ./pkg/rustbert/...
