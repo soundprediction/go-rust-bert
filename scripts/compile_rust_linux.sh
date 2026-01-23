@@ -39,10 +39,13 @@ if [ -d "$TORCH_LIB_DIR" ]; then
     cp "$TORCH_LIB_DIR/libc10.so" "$TARGET_DIR/"
     cp "$TORCH_LIB_DIR/libtorch_cpu.so" "$TARGET_DIR/"
     cp "$TORCH_LIB_DIR/libtorch.so" "$TARGET_DIR/"
-    # Often openmp is needed, on linux it's usually libgomp.so.1 but might be bundled as libomp.so?
-    # checking for libgomp
-    if [ -f "$TORCH_LIB_DIR/libgomp.so.1" ]; then
-        cp "$TORCH_LIB_DIR/libgomp.so.1" "$TARGET_DIR/"
+    # OpenMP library - look for versioned filename patterns like libgomp-98b21ff3.so.1
+    # Copy with original name since libtorch_cpu.so has a hardcoded NEEDED entry for it
+    GOMP_LIB=$(find "$TORCH_LIB_DIR" -name "libgomp*.so*" -type f | head -n 1)
+    if [ -n "$GOMP_LIB" ]; then
+        GOMP_NAME=$(basename "$GOMP_LIB")
+        cp "$GOMP_LIB" "$TARGET_DIR/$GOMP_NAME"
+        echo "Copied $GOMP_NAME"
     fi
     
     # Try to set RPATH to $ORIGIN so it finds bundled libs
@@ -58,8 +61,8 @@ if [ -d "$TORCH_LIB_DIR" ]; then
     gzip -9 -f "$TARGET_DIR/libc10.so"
     gzip -9 -f "$TARGET_DIR/libtorch_cpu.so"
     gzip -9 -f "$TARGET_DIR/libtorch.so"
-    if [ -f "$TARGET_DIR/libgomp.so.1" ]; then
-       gzip -9 -f "$TARGET_DIR/libgomp.so.1"
+    if [ -n "$GOMP_NAME" ] && [ -f "$TARGET_DIR/$GOMP_NAME" ]; then
+        gzip -9 -f "$TARGET_DIR/$GOMP_NAME"
     fi
     
     echo "✅ Linux library bundle created at $TARGET_DIR"

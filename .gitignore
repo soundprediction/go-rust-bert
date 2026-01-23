@@ -23,3 +23,8 @@ vendor/
 
 # Test Artifacts/Cache
 rustbert_test_*
+openspec/
+.claude
+.ralphy
+.cursor
+

@@ -21,12 +21,12 @@ func TestSentimentAnalysis(t *testing.T) {
 	// Test cases
 	tests := []struct {
 		text     string
-		expected string // "Positive" or "Negative"
+		expected string // "POSITIVE" or "NEGATIVE"
 	}{
-		{"I love this library!", "Positive"},
-		{"This is terrible.", "Negative"},
-		{"Absolutely fantastic work.", "Positive"},
-		{"I am very disappointed.", "Negative"},
+		{"I love this library!", "POSITIVE"},
+		{"This is terrible.", "NEGATIVE"},
+		{"Absolutely fantastic work.", "POSITIVE"},
+		{"I am very disappointed.", "NEGATIVE"},
 	}
 
 	for _, tt := range tests {
@@ -361,9 +361,9 @@ func TestSentimentAnalysisFromFiles(t *testing.T) {
 			continue
 		}
 
-		expectedLabel := "Positive"
+		expectedLabel := "POSITIVE"
 		if i == 1 {
-			expectedLabel = "Negative"
+			expectedLabel = "NEGATIVE"
 		}
 
 		if result.Label != expectedLabel {

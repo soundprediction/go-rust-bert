@@ -79,19 +79,68 @@ func Init() error {
 		return err
 	}
 
-	// Extract libtorch dependencies
-	libs := []string{"libc10.dylib.gz", "libtorch_cpu.dylib.gz", "libtorch.dylib.gz", "libomp.dylib.gz"}
+	// Extract libtorch dependencies - platform specific
+	var libs []string
+	var optionalLibs []string
+	switch goOS {
+	case "darwin":
+		libs = []string{"libc10.dylib.gz", "libtorch_cpu.dylib.gz", "libtorch.dylib.gz", "libomp.dylib.gz"}
+	case "linux":
+		libs = []string{"libc10.so.gz", "libtorch_cpu.so.gz", "libtorch.so.gz"}
+		// gomp library will be discovered dynamically
+	}
 	for _, l := range libs {
 		dest := filepath.Join(tmpDir, strings.TrimSuffix(l, ".gz"))
 		if err := extractAndDecompress(filepath.Join(libPath, l), dest); err != nil {
-			// Warn but don't fail, maybe some are optional or platform specific?
-			// Actually they are likely required.
-			// Re-enable fail on error if critical.
 			return fmt.Errorf("failed to extract %s: %w", l, err)
 		}
 	}
+	// Extract optional libs (don't fail if missing)
+	for _, l := range optionalLibs {
+		dest := filepath.Join(tmpDir, strings.TrimSuffix(l, ".gz"))
+		_ = extractAndDecompress(filepath.Join(libPath, l), dest)
+	}
 
-	// DLOPEN
+	// On Linux, discover and extract any libgomp*.so*.gz files (name includes hash)
+	if goOS == "linux" {
+		entries, _ := libFS.ReadDir(libPath)
+		for _, entry := range entries {
+			name := entry.Name()
+			if strings.HasPrefix(name, "libgomp") && strings.HasSuffix(name, ".gz") {
+				dest := filepath.Join(tmpDir, strings.TrimSuffix(name, ".gz"))
+				_ = extractAndDecompress(filepath.Join(libPath, name), dest)
+			}
+		}
+	}
+
+	// Load dependencies first with RTLD_GLOBAL so they're available to main lib
+	// Order matters: load dependencies before dependents
+	var depLibNames []string
+	switch goOS {
+	case "darwin":
+		depLibNames = []string{"libomp.dylib", "libc10.dylib", "libtorch.dylib", "libtorch_cpu.dylib"}
+	case "linux":
+		depLibNames = []string{"libc10.so", "libtorch.so", "libtorch_cpu.so"}
+		// Also load any libgomp libraries
+		files, _ := os.ReadDir(tmpDir)
+		for _, f := range files {
+			if strings.HasPrefix(f.Name(), "libgomp") && strings.HasSuffix(f.Name(), ".so.1") {
+				depLibNames = append([]string{f.Name()}, depLibNames...)
+			}
+		}
+	}
+	for _, depLib := range depLibNames {
+		depPath := filepath.Join(tmpDir, depLib)
+		cDepPath := C.CString(depPath)
+		depHandle := C.open_lib(cDepPath)
+		C.free(unsafe.Pointer(cDepPath))
+		if depHandle == nil {
+			cErr := C.get_dlerror()
+			return fmt.Errorf("dlopen dependency %s failed: %s", depLib, C.GoString(cErr))
+		}
+	}
+
+	// DLOPEN main binding library
 	cPath := C.CString(destBinding)
 	defer C.free(unsafe.Pointer(cPath))
 	dlHandle = C.open_lib(cPath)

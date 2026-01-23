@@ -1,0 +1,14 @@
+[package]
+name = "rust_bert_binding"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+rust-bert = { version = "0.23", features = ["remote"] }
+libc = "0.2"
+tch = "0.17"
+# Force console with default features (std) to fix indicatif 0.16 compatibility
+console = "0.16"
