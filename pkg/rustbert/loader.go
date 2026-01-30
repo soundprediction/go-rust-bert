@@ -31,6 +31,7 @@ import (
 	"unsafe"
 )
 
+//go:generate ../../scripts/compile_rust_linux.sh
 //go:embed lib
 var libFS embed.FS
 
