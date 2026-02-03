@@ -292,15 +292,62 @@ func Init() error {
 }
 
 func extractAndDecompress(srcPath, destPath string) error {
-	f, err := libFS.Open(srcPath)
-	if err != nil {
-		return fmt.Errorf("open embedded %s: %w", srcPath, err)
-	}
-	defer f.Close()
+	var r io.Reader
+	var closers []io.Closer
 
-	var r io.Reader = f
+	// CLEANUP helper
+	defer func() {
+		for _, c := range closers {
+			c.Close()
+		}
+	}()
+
+	// 1. Try opening direct file
+	f, err := libFS.Open(srcPath)
+	if err == nil {
+		closers = append(closers, f)
+		r = f
+	} else {
+		// 2. Try split files (partaa, partab, ...)
+		// We assume standard split suffixes: aa, ab, ac...
+		var readers []io.Reader
+		
+		// Attempt to find parts
+		// We support up to 'az' which is plenty for 100MB chunks of a few GB file
+		// ASCII 97='a'
+		for i := 0; i < 26; i++ { // first char
+			for j := 0; j < 26; j++ { // second char
+				suffix := fmt.Sprintf(".part%c%c", 'a'+i, 'a'+j)
+				partPath := srcPath + suffix
+				
+				pf, err := libFS.Open(partPath)
+				if err != nil {
+					// Stop at first missing part. 
+					// However, ensure we found at least one if we are relying on split
+					if len(readers) == 0 {
+						// No parts found, and main file missing -> error
+						return fmt.Errorf("open embedded %s: %w", srcPath, err)
+					}
+					// End of parts
+					goto PartsDone
+				}
+				closers = append(closers, pf)
+				readers = append(readers, pf)
+			}
+		}
+	PartsDone:
+		if len(readers) > 0 {
+			r = io.MultiReader(readers...)
+		}
+	}
+
+	if r == nil {
+		return fmt.Errorf("failed to open source %s (or parts)", srcPath)
+	}
+
+	// 3. Decompress if needed
 	if strings.HasSuffix(srcPath, ".gz") {
-		gz, err := gzip.NewReader(f)
+		gz, err := gzip.NewReader(r)
 		if err != nil {
 			return fmt.Errorf("gzip reader %s: %w", srcPath, err)
 		}
