@@ -1,3 +1,0 @@
-pkg/rustbert/lib/linux-amd64/libtorch_cpu.so.g filter=lfs diff=lfs merge=lfs -text
-pkg/rustbert/lib/linux-amd64/libtorch_cpu.so.gz filter=lfs diff=lfs merge=lfs -text
-*.so.gz filter=lfs diff=lfs merge=lfs -text
